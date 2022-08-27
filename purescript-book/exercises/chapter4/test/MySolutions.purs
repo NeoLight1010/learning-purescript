@@ -3,10 +3,11 @@ module Test.MySolutions where
 import Prelude
 
 import Control.Alternative (guard)
-import Data.Array (cons, filter, head, length, null, tail, (..))
+import Data.Array (cons, filter, head, length, null, tail, (..), (:))
 import Data.Foldable (foldl)
-import Data.Maybe (fromMaybe)
-import Test.Examples (factorsV3)
+import Data.Maybe (Maybe, fromMaybe)
+import Data.Path (Path, filename, isDirectory, ls, size)
+import Test.Examples (allFiles', factorsV3)
 
 isEven :: Int -> Boolean
 isEven n =
@@ -86,3 +87,24 @@ fibTailRec n = fib' n 0 1
           
 reverse :: forall (a :: Type). Array a -> Array a
 reverse = foldl (\xs x -> cons x xs) []
+
+onlyFiles :: Path -> Array Path
+onlyFiles path = filter (not isDirectory) (allFiles' path)
+
+whereIs :: Path -> String -> Maybe Path
+whereIs path targetFilename = head $ do
+  file <- ls path
+  child <- ls file
+  guard $ filename child == filename file <> targetFilename
+  pure file
+
+largestSmallest :: Path -> Array Path
+largestSmallest path = foldl loop [] (onlyFiles path) where
+  loop [largest, smallest] current | size current > size largest = [current, smallest]
+                                   | size current < size smallest = [largest, current]
+                                   | otherwise = [largest, smallest]
+
+  loop [last] current | size current > size last = [current, last]
+                      | otherwise = [last, current]
+
+  loop arr current = current : arr
